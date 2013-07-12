@@ -1,6 +1,6 @@
 import socket
 import threading
-
+import hashlib
 
 class Feather:
     global sessions
@@ -26,12 +26,15 @@ class Feather:
             request = request.split("\r\n")
             req_type = request[0].split()
             print ip, request[0]
-
+            for x in request:
+                if x.startswith("User-Agent: "):
+                    id = hashlib.md5(ip+x).hexdigest()
+                    break
+            print id
             if req_type[0] == "GET":
                 page = req_type[1]
-                if page in self.routes:
-                    
-                    self.routes[page]({"request":"GET", "page":page, "ip":ip, "obj":obj})
+                if page in self.routes: 
+                    self.routes[page]({"request":"GET", "page":page, "ip":ip, "obj":obj, "id":id})
                 else:
                     obj.send(self.response_header+"Page does not exist."+"\r\n")
             
@@ -46,7 +49,7 @@ class Feather:
                     for x in post_data:
                         x = x.split("=")
                         return_data[x[0]] = x[1]
-                    self.routes[page]({"request":"POST", "ip":ip, "page":page, "obj":obj, "post_data":return_data})
+                    self.routes[page]({"request":"POST", "ip":ip, "page":page, "obj":obj, "post_data":return_data, 'id':id})
             obj.close()
         else:
             obj.close()
@@ -59,14 +62,13 @@ class Feather:
         request['obj'].send(self.response_header+"\n"+html+"\r\n")
 
     def session_start(self, name, request):
-        sessions[request['ip']] = name
+        sessions[request['id']] = name
 
     def session_stop(self, name, request):
-        del sessions[request['ip']]
+        del sessions[request['id']]
 
     def session_check(self, request):
-        ip = request['ip']
-        if ip in sessions:
+        if request['id'] in sessions:
             return True
         else:
             return False
