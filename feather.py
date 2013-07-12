@@ -1,14 +1,14 @@
 import socket
 import threading
-import hashlib
+
 
 class Feather:
+    global sessions
+    sessions = {}
     def __init__(self, routes):
-        self.response_header = """HTTP/1.1 200 OK
-
-        """
+        self.response_header = "HTTP/1.0 200 OK\r\nServer: Feather HTTP\r\nContent-type: text/html\r\n\r\n"
         self.routes = routes
-        self.session = {}
+
     def run(self, host, port):
         print "Feather has started on port", str(port)
         self.sock = socket.socket()
@@ -26,10 +26,18 @@ class Feather:
             request = request.split("\r\n")
             req_type = request[0].split()
             print ip, request[0]
+            id = ""
+            for x in request:
+                if x.startswith("Cookie: "):
+                    x = x.split()
+                    id = x[1].replace(";", '')
+            print id
+            print sessions
             if req_type[0] == "GET":
                 page = req_type[1]
                 if page in self.routes:
-                    self.routes[page]({"request":"GET", "page":page, "ip":ip, "obj":obj, "id":hashlib.md5(request[6]).hexdigest()})
+                    
+                    self.routes[page]({"request":"GET", "page":page, "ip":ip, "obj":obj, "id":id})
                 else:
                     obj.send(self.response_header+"Page does not exist."+"\r\n")
             
@@ -44,7 +52,7 @@ class Feather:
                     for x in post_data:
                         x = x.split("=")
                         return_data[x[0]] = x[1]
-                    self.routes[page]({"request":"POST", "ip":ip, "page":page, "obj":obj, "post_data":return_data, "id":hashlib.md5(request[6]).hexdigest()})
+                    self.routes[page]({"request":"POST", "ip":ip, "page":page, "obj":obj, "post_data":return_data, "id":id})
             obj.close()
         else:
             obj.close()
@@ -57,17 +65,18 @@ class Feather:
         request['obj'].send(self.response_header+"\n"+html+"\r\n")
 
     def session_start(self, name, request):
-        self.session[request['id']] = name
+        request['obj'].send("HTTP/1.0 200 OK\r\nServer: Feather HTTP\r\nContent-type: text/html\r\nSet-Cookie: name="+request['id']+"; Expires=Wed, 09 Jun 2021 10:18:14 GMT\r\n\r\n")
+        sessions[request['id']] = name
 
     def session_stop(self, name, request):
-        del seld.session[request['id']]
+        del sessions[request['id']]
 
     def session_check(self, id):
-        if id in self.session:
+        if id in sessions:
             return True
         else:
             return False
     
     def session(self):
-        return self.session
+        return sessions
 

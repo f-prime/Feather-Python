@@ -2,24 +2,22 @@ from feather import Feather
 
 class WebServer:
     def __init__(self):
-        routes = {"/":self.index}
+        routes = {"/":self.index, "/login/":self.login,}
         feather = Feather(routes)
         self.feather = feather
-        feather.run("", 5000)
+        feather.run("", 5001)
     
     def index(self, request):
-        if request['id'] in self.feather.session:
-            self.feather.html("<b>"+self.feather.session[request['id']], request)
-        
-        #if self.feather.session_check(request['id']):
-            #self.feather.html(self.feather.session[request['id']])
-        if request['request'] == "GET":
-            self.feather.respond("template/index.html", request)
-        elif request['request'] == "POST":
-            self.feather.html("<b>YAY</b>", request)
-            username = request['post_data']['username']
-            self.feather.session_start(username, request)
-            redir = """<script>window.location="{0}";""".format("/")
-            self.feather.html(redir, request)
+        if request['id'] not in self.feather.session():
+            self.feather.html("<script>window.location='/login/';</script>", request)
+        elif request['request'] == "GET":
+            self.feather.html("<h1>Hey "+self.feather.session()[request['id']]+"</h1>", request)
 
+    def login(self, request):
+        if request['request'] == "GET":
+            self.feather.html("<form method='post'><input type='text' name='name' value='Name'><input type='submit' name='submit'></form>", request)
+        if request['request'] == "POST":
+            username = request['post_data']['name']
+            self.feather.session_start(username, request)
+            self.feather.html("<script>window.location='/';</script>", request)
 WebServer()
