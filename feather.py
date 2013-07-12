@@ -1,5 +1,6 @@
 import socket
 import threading
+import hashlib
 
 class Feather:
     def __init__(self, routes):
@@ -7,7 +8,7 @@ class Feather:
 
         """
         self.routes = routes
-
+        self.session = {}
     def run(self, host, port):
         print "Feather has started on port", str(port)
         self.sock = socket.socket()
@@ -28,9 +29,10 @@ class Feather:
             if req_type[0] == "GET":
                 page = req_type[1]
                 if page in self.routes:
-                    self.routes[page]({"request":"GET", "page":page, "obj":obj,})
+                    self.routes[page]({"request":"GET", "page":page, "ip":ip, "obj":obj, "id":hashlib.md5(request[6]).hexdigest()})
                 else:
                     obj.send(self.response_header+"Page does not exist."+"\r\n")
+            
             if req_type[0] == "POST":
                 page = req_type[1]
                 if page in self.routes:
@@ -42,7 +44,7 @@ class Feather:
                     for x in post_data:
                         x = x.split("=")
                         return_data[x[0]] = x[1]
-                    self.routes[page]({"request":"POST", "page":page, "obj":obj, "post_data":return_data})
+                    self.routes[page]({"request":"POST", "ip":ip, "page":page, "obj":obj, "post_data":return_data, "id":hashlib.md5(request[6]).hexdigest()})
             obj.close()
         else:
             obj.close()
@@ -52,4 +54,20 @@ class Feather:
             request['obj'].send(self.response_header+file.read()+"\r\n")
 
     def html(self, html, request):
-        request['obj'].send(self.response_header+html+"\r\n")
+        request['obj'].send(self.response_header+"\n"+html+"\r\n")
+
+    def session_start(self, name, request):
+        self.session[request['id']] = name
+
+    def session_stop(self, name, request):
+        del seld.session[request['id']]
+
+    def session_check(self, id):
+        if id in self.session:
+            return True
+        else:
+            return False
+    
+    def session(self):
+        return self.session
+
