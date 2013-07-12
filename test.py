@@ -8,10 +8,10 @@ class WebServer:
         feather.run("", 5001)
     
     def index(self, request):
-        if request['id'] not in self.feather.session():
+        if request['ip'] not in self.feather.session():
             self.feather.html("<script>window.location='/login/';</script>", request)
         elif request['request'] == "GET":
-            self.feather.html("<h1>Hey "+self.feather.session()[request['id']]+"</h1>", request)
+            self.feather.html("<h1>Hey "+self.feather.session()[request['ip']]+"</h1>", request)
 
     def login(self, request):
         if request['request'] == "GET":

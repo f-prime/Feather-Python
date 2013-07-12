@@ -26,18 +26,12 @@ class Feather:
             request = request.split("\r\n")
             req_type = request[0].split()
             print ip, request[0]
-            id = ""
-            for x in request:
-                if x.startswith("Cookie: "):
-                    x = x.split()
-                    id = x[1].replace(";", '')
-            print id
-            print sessions
+
             if req_type[0] == "GET":
                 page = req_type[1]
                 if page in self.routes:
                     
-                    self.routes[page]({"request":"GET", "page":page, "ip":ip, "obj":obj, "id":id})
+                    self.routes[page]({"request":"GET", "page":page, "ip":ip, "obj":obj})
                 else:
                     obj.send(self.response_header+"Page does not exist."+"\r\n")
             
@@ -52,7 +46,7 @@ class Feather:
                     for x in post_data:
                         x = x.split("=")
                         return_data[x[0]] = x[1]
-                    self.routes[page]({"request":"POST", "ip":ip, "page":page, "obj":obj, "post_data":return_data, "id":id})
+                    self.routes[page]({"request":"POST", "ip":ip, "page":page, "obj":obj, "post_data":return_data})
             obj.close()
         else:
             obj.close()
@@ -65,14 +59,14 @@ class Feather:
         request['obj'].send(self.response_header+"\n"+html+"\r\n")
 
     def session_start(self, name, request):
-        request['obj'].send("HTTP/1.0 200 OK\r\nServer: Feather HTTP\r\nContent-type: text/html\r\nSet-Cookie: name="+request['id']+"; Expires=Wed, 09 Jun 2021 10:18:14 GMT\r\n\r\n")
-        sessions[request['id']] = name
+        sessions[request['ip']] = name
 
     def session_stop(self, name, request):
-        del sessions[request['id']]
+        del sessions[request['ip']]
 
-    def session_check(self, id):
-        if id in sessions:
+    def session_check(self, request):
+        ip = request['ip']
+        if ip in sessions:
             return True
         else:
             return False
