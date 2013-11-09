@@ -1,78 +1,93 @@
 import socket
-import threading
-import hashlib
+import uuid
+import thread
+import urlparse
+import time
 
 class Feather:
-    global sessions
-    sessions = {}
     def __init__(self, routes):
-        self.response_header = "HTTP/1.0 200 OK\r\nServer: Feather HTTP\r\nContent-type: text/html\r\n\r\n"
+        self.header = "HTTP/1.0 {0} {1}\n\r\r\nServer: Feather \r\nContent-type: text/html\r\n Set-Cookie: name=value\r\nSet-Cookie: FUUUCKKK=value2; \r\n\r\n"""
         self.routes = routes
 
-    def run(self, host, port):
-        print "Feather has started on port", str(port)
+    def run(self, host="127.0.0.1", port=7070):
+        print "Feather has started on http://"+host+":"+str(port)
         self.sock = socket.socket()
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind((host, port))
         self.sock.listen(5)
         while True:
-            obj,conn = self.sock.accept()
-            ip = conn[0]
-            threading.Thread(target=self.handle, args=(obj, ip)).start()
+            obj, conn = self.sock.accept()
+            thread.start_new_thread(self._handle, (obj, conn[0]))
 
-    def handle(self, obj, ip):
-        request = obj.recv(1024)
-        if request:
-            request = request.split("\r\n")
-            req_type = request[0].split()
-            print ip, request[0]
-            for x in request:
-                if x.startswith("User-Agent: "):
-                    id = hashlib.md5(ip+x).hexdigest()
-                    break
-            print id
-            if req_type[0] == "GET":
-                page = req_type[1]
-                if page in self.routes: 
-                    self.routes[page]({"request":"GET", "page":page, "ip":ip, "obj":obj, "id":id})
-                else:
-                    obj.send(self.response_header+"Page does not exist."+"\r\n")
+    def _handle(self, obj, conn):
+        self.obj = obj
+        data_ = obj.recv(1024)
+        if data_:
+            print data_
+            data = self._parse(data_)
+            if data['url'] not in self.routes:
+                self.abort(404)
+            self.routes[data['url']]()
+        
+        print conn + " "+ data['url'] +" "+ data['type'] +" "+str(data) 
+        obj.close()
+
+    def abort(self, code):
+        page = """
+
+            Page not found.
+
+
+        """
+
+        header = self.header.format(str(code), "NOT FOUND")
+        self._send(header+page)
+   
+    def requestdata(self):
+
+        return self.out
+
+
+    def html(self, html):
+
+        header = self.header.format("200", "OK")
+        self._send(header+html)
+
+    def _send(self, code):
+        self.obj.send(code)
+
+    def _parse(self, data):
+        data = data.split("\r\n")
+        out = {}
+        first = data[0].split()
+        out['type'] = first[0]
+        if first[0] == "POST":
+            post_data = data[len(data)-1].split("&")
+            post_d = {}
+            for x in post_data:
+                x = x.split("=")
+                post_d[x[0]] = x[1]
+            out['post_data'] = post_d
+
+        out['url'] = urlparse.urlparse(first[1])[2]
+        out['version'] = first[2]
+        on = 0
+        while not data[on].startswith("User-Agent:"):
+            on += 1
+
+        agent = data[on].split()
+        out['useragent'] = ' '.join(agent[1:])
+        try:
+            while not data[on].startswith("Cookie:"):
+                on += 1
+
+            cookie = data[on].split()
+            out['cookie'] = ' '.join(cookie[1:])
+        except IndexError:
+            pass
+        self.out = out
+        return out
             
-            if req_type[0] == "POST":
-                page = req_type[1]
-                if page in self.routes:
-                    post_data = request[len(request)-1]
-                    if "&" not in post_data:
-                        post_data = post_data+"&"
-                    post_data = post_data.split("&")
-                    return_data = {}
-                    for x in post_data:
-                        x = x.split("=")
-                        return_data[x[0]] = x[1]
-                    self.routes[page]({"request":"POST", "ip":ip, "page":page, "obj":obj, "post_data":return_data, 'id':id})
-            obj.close()
-        else:
-            obj.close()
 
-    def respond(self, page, request):
-        with open(page, 'rb') as file:
-            request['obj'].send(self.response_header+file.read()+"\r\n")
 
-    def html(self, html, request):
-        request['obj'].send(self.response_header+"\n"+html+"\r\n")
-
-    def session_start(self, name, request):
-        sessions[request['id']] = name
-
-    def session_stop(self, name, request):
-        del sessions[request['id']]
-
-    def session_check(self, request):
-        if request['id'] in sessions:
-            return True
-        else:
-            return False
-    
-    def session(self):
-        return sessions
 

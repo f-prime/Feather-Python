@@ -1,0 +1,26 @@
+from feather import Feather
+
+class WebServer:
+    def __init__(self):
+        routes = {"/":self.index, "/login/":self.login,"/test.css":self.css,}
+        feather = Feather(routes)
+        self.feather = feather
+        feather.run("", 5001)
+    
+    def index(self, request):
+        if request['id'] not in self.feather.session():
+            self.feather.html("<script>window.location='/login/';</script>", request)
+        elif request['request'] == "GET":
+            self.feather.html("<h1>Hey "+self.feather.session()[request['id']]+"</h1>", request)
+
+    def login(self, request):
+        if request['request'] == "GET":
+            self.feather.respond("template/index.html", request)
+        if request['request'] == "POST":
+            username = request['post_data']['name']
+            self.feather.session_start(username, request)
+            self.feather.html("<script>window.location='/';</script>", request)
+
+    def css(self, request):
+        self.feather.respond("template/test.css", request)
+WebServer()
