@@ -11,7 +11,7 @@ def index(data):
     method = data.request_data()['method']
     if method == "POST":
         print data.request_data()['form']                                                                                                                                                            
-    data.respond_template("a.html")
+    data.respond_template("templates/sample_app.html")
 
 routes = {
     "/":index,
