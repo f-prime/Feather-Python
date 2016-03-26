@@ -1,5 +1,3 @@
-import re
-import string
 import datetime
 
 class Response:
