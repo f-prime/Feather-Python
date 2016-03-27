@@ -1,15 +1,17 @@
 from feather import http
 
 
-def index(data):
-    method = data.request_data()['method']
+def index(response):
+    data = response.request_data()
+    method = data['method']
     if method == "POST":
-        print data.request_data()['form']
+        print data['form']
+    print data['session']
     data.respond_template("templates/starter_app.html")
 
 routes = {
     "/":index,
 }
 
-for request in http.http("127.0.0.1", 8080):
-    request.router(routes)
+http.start("localhost", 8080, routes)
+

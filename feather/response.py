@@ -1,4 +1,6 @@
 import datetime
+import config
+from utils import aes
 
 class Response:
     def __init__(self, obj, received, post_data, ip):
@@ -11,7 +13,9 @@ class Response:
             404:"NOT FOUND",
             403:"UNAUTHORIZED",
             302:"MOVED",
+            500:"SOMETHING BROKE",
         }
+        self._set_session = None
 
     def request_data(self):
         headers = self.response_obj
@@ -20,16 +24,45 @@ class Response:
             query = [1]
         else:
             query = ""
+        cookies = {}
+        cookies_header = headers.get_headers().get("Cookie")
+        if cookies_header:
+            for cookie in cookies_header.split(";"):
+                cookie = cookie.strip()
+                cookie = cookie.split("=")
+                cookies[cookie[0]] = cookie[1]
+        
+        post_data = {}
+        if self.post_data:
+            for p in self.post_data.split("&"):
+                p = p.strip()
+                p = p.split("=")
+                post_data[p[0]] = p[1]
 
         return {        
                 "method":headers.get_method(),
                 "route":headers.get_path(),
-                "form":self.post_data,
-                "query":query
+                "form":post_data,
+                "query":query,
+                "session":cookies
             }
 
-    def form_data(self):
-        data = self.request_data()
+    def set_session(self, key, value):
+        self._set_session = "{}={}".format(key, value)#aes.encryptData(config.config['session_secret'], value).encode("base64"))
+
+    def get_session(self, key):
+        session = self.request_data()['session'].get(key)
+        return session
+        # Still working on this
+        if session:
+            try:
+                return aes.decryptData(config.config['session_secret'], session.decode("base64"))
+            except Exception, e:
+                print e
+                return None
+
+    def form_data(self, key):
+        data = self.request_data()['form'].get(key)
 
     def router(self, routes):
         route = self.route()
@@ -55,6 +88,8 @@ class Response:
             "Content-Type":"text/html; charset=UTF-8",
         }
 
+        if self._set_session:
+            response['Set-Cookie'] = self._set_session 
         if headers:
             for header in headers:
                 response[header] = headers[header]
