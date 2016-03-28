@@ -8,13 +8,69 @@ class Response:
         self.response_obj = received
         self.ip = ip
         self.post_data = post_data
-        self.API_ERROR = {
-            200:"OK",
-            404:"NOT FOUND",
-            403:"UNAUTHORIZED",
-            302:"MOVED",
-            500:"SOMETHING BROKE",
-        }
+        self.HTTP_ERROR = {100: 'Continue',
+         101: 'Switching',
+         102: 'Processing',
+         200: 'OK',
+         201: 'Created',
+         202: 'Accepted',
+         203: 'Non-Authoritative',
+         204: 'No',
+         205: 'Reset',
+         206: 'Partial',
+         207: 'Multi-Status',
+         208: 'Already',
+         226: 'IM',
+         300: 'Multiple',
+         301: 'Moved',
+         302: 'Found',
+         303: 'See',
+         304: 'Not',
+         305: 'Use',
+         306: 'Reserved',
+         307: 'Temporary',
+         308: 'Permanent',
+         400: 'Bad',
+         401: 'Unauthorized',
+         402: 'Payment',
+         403: 'Forbidden',
+         404: 'Not',
+         405: 'Method',
+         406: 'Not',
+         407: 'Proxy',
+         408: 'Request',
+         409: 'Conflict',
+         410: 'Gone',
+         411: 'Length',
+         412: 'Precondition',
+         413: 'Request',
+         414: 'Request-URI',
+         415: 'Unsupported',
+         416: 'Requested',
+         417: 'Expectation',
+         422: 'Unprocessable',
+         423: 'Locked',
+         424: 'Failed',
+         425: 'Reserved',
+         426: 'Upgrade',
+         427: 'Unassigned',
+         428: 'Precondition',
+         429: 'Too',
+         430: 'Unassigned',
+         431: 'Request',
+         500: 'Internal',
+         501: 'Not',
+         502: 'Bad',
+         503: 'Service',
+         504: 'Gateway',
+         505: 'HTTP',
+         506: 'Variant',
+         507: 'Insufficient',
+         508: 'Loop',
+         509: 'Unassigned',
+         510: 'Not',
+         511: 'Network'}
+
         self._set_session = None
 
     def request_data(self):
@@ -79,8 +135,8 @@ class Response:
         self.respond(open(file).read(), status_code=status_code, headers=headers)
 
     def respond(self, data, status_code=200, headers=None):
-        if status_code in self.API_ERROR:
-            message = self.API_ERROR[status_code]
+        if status_code in self.HTTP_ERROR:
+            message = self.HTTP_ERROR[status_code]
         else:
             message = "OK"
         response = {
