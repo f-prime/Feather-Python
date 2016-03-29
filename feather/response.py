@@ -1,6 +1,7 @@
 import datetime
 import config
 from utils import aes
+import json
 
 class Response:
     def __init__(self, obj, received, post_data, ip):
@@ -106,7 +107,7 @@ class Response:
     def set_session(self, key, value):
         self._set_session = "{}={}".format(key, value)#aes.encryptData(config.config['session_secret'], value).encode("base64"))
 
-    def get_session(self, key):
+    def session(self, key):
         session = self.request_data()['session'].get(key)
         return session
         # Still working on this
@@ -117,18 +118,21 @@ class Response:
                 print e
                 return None
 
-    def form_data(self, key):
-        data = self.request_data()['form'].get(key)
+    def respond_json(self, dictionary, status_code=200, headers=None):
+        return self.respond(json.dumps(dictionary), status_code=status_code, headers={"Content-Type":"text/plain"})
+
+    def redirect(self, location):
+        return self.respond("", status_code=302, headers={"Location":location})
 
     def router(self, routes):
         route = self.route()
         if route in routes:
-            routes[route](self)
+            routes[route](self.request_data(), self)
         else:
             self.respond("404 Page Not Found", status_code=404)
 
     def route(self):
-        print "[{}] {} - {}".format(datetime.datetime.now(), self.ip, self.request_data()) 
+        print "[{}] {} - {} {}".format(datetime.datetime.now(), self.ip, self.request_data()['route'], self.request_data()['method']) 
         return self.request_data()['route']
     
     def respond_template(self, file, status_code=200, headers=None):
