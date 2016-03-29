@@ -72,7 +72,7 @@ class Response:
          510: 'Not',
          511: 'Network'}
 
-        self._set_session = None
+        self._set_session = []
 
     def request_data(self):
         headers = self.response_obj
@@ -105,7 +105,7 @@ class Response:
             }
 
     def set_session(self, key, value):
-        self._set_session = "{}={}".format(key, value)#aes.encryptData(config.config['session_secret'], value).encode("base64"))
+        self._set_session.append("{}={}".format(key, value))#aes.encryptData(config.config['session_secret'], value).encode("base64"))
 
     def session(self, key):
         session = self.request_data()['session'].get(key)
@@ -149,7 +149,7 @@ class Response:
         }
 
         if self._set_session:
-            response['Set-Cookie'] = self._set_session 
+            response['Set-Cookie'] = '&'.join(self._set_session)
         if headers:
             for header in headers:
                 response[header] = headers[header]
