@@ -2,6 +2,7 @@ import datetime
 import config
 from utils import aes
 import json
+import re
 
 class Response:
     def __init__(self, obj, received, post_data, ip):
@@ -101,7 +102,8 @@ class Response:
                 "route":headers.get_path(),
                 "form":post_data,
                 "query":query,
-                "session":cookies
+                "session":cookies,
+                "params":{},
             }
 
     def set_session(self, key, value):
@@ -127,7 +129,36 @@ class Response:
     def router(self, routes):
         route = self.route()
         req = self.request_data()
+        isOkay = False
         if route in routes:
+            isOkay = True
+        else:
+            for r in routes: # Parses URL for variables
+                if "<" in r:
+                    r_s = r.split("/")
+                    rou_s = route.split("/")
+                    if len(r_s) == len(rou_s):
+                        match = True
+                        while len(r_s) > 0:
+                            r_set, r_req =  r_s.pop(0), rou_s.pop(0)
+                            if r_set == r_req or "<" in r_set:
+                                continue
+                            match = False
+                            break
+                        if match:
+                            params = {}
+                            r_s = r.split("/")
+                            rou_s = route.split("/")
+                            while len(r_s) > 0:
+                                r_set, r_req = r_s.pop(0), rou_s.pop(0)
+                                if "<" in r_set:
+                                    variable = re.findall("<([a-zA-Z0-9]+)>", r_set)
+                                    params[variable[0]] = r_req
+                            req['params'] = params
+                            isOkay = True
+                            route = r
+                            break
+        if isOkay:
             if type(routes[route]) == dict:
                 if req.get("method") in routes[route]:
                     routes[route][req.get("method")](req, self)
