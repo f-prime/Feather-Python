@@ -102,23 +102,27 @@ class Response:
                 "route":headers.get_path(),
                 "form":post_data,
                 "query":query,
-                "session":cookies,
+                "session":self.parse_cookies(cookies),
                 "params":{},
             }
 
     def set_session(self, key, value):
-        self._set_session.append("{}={}".format(key, value))#aes.encryptData(config.config['session_secret'], value).encode("base64"))
+        self._set_session.append("{}={}".format(key, aes.encryptData(config.config['session_secret'], value).encode("base64").replace("=", "|").replace("\n",'')))
 
-    def session(self, key):
-        session = self.request_data()['session'].get(key)
-        return session
-        # Still working on this
-        if session:
-            try:
-                return aes.decryptData(config.config['session_secret'], session.decode("base64"))
-            except Exception, e:
-                print e
-                return None
+    def parse_cookies(self, cookies):
+        """
+            Checks for sessions created by Feather and decrypts them with the session_secret.
+        """
+        session_secret = config.config['session_secret']
+        out_cookies = {}
+        for c in cookies:
+            if "|" in cookies[c]:
+                cookies[c] = cookies[c].replace("|", "=")
+                try:
+                    out_cookies[c] = aes.decryptData(session_secret, cookies[c].decode("base64"))
+                except: # This happens if the session cookies was not created by Feather.
+                    pass
+        return out_cookies
 
     def respond_json(self, dictionary, status_code=200, headers=None):
         return self.respond(json.dumps(dictionary), status_code=status_code, headers={"Content-Type":"text/plain"})
