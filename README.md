@@ -3,7 +3,21 @@ About
 
 Feather is a Python micro web framework that aims to be as small and simple as possible while still providing a production ready web server.
 
-Example
+Hello World
+===========
+
+```
+from feather import http                                                                                                                                                                             
+
+def hello_world(req, res):
+    res.respond("Hello World!")
+
+http.start({
+    "/":hello_world
+})
+```
+
+Other Examples
 =======
 
 ```
