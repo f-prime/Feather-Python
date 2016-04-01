@@ -126,8 +126,15 @@ class Response:
 
     def router(self, routes):
         route = self.route()
+        req = self.request_data()
         if route in routes:
-            routes[route](self.request_data(), self)
+            if type(routes[route]) == dict:
+                if req.get("method") in routes[route]:
+                    routes[route][req.get("method")](req, self)
+                else:
+                    self.respond("403 Method Not Allowed", status_code=403)
+            else:
+                routes[route](req, self)
         else:
             self.respond("404 Page Not Found", status_code=404)
 
