@@ -125,10 +125,17 @@ class Response:
         return out_cookies
 
     def respond_json(self, dictionary, status_code=200, headers=None):
-        return self.respond(json.dumps(dictionary), status_code=status_code, headers={"Content-Type":"text/plain"})
+        try:
+            return self.respond(json.dumps(dictionary), status_code=status_code, headers={"Content-Type":"text/plain"})
+        except:
+            return self.respond("500 Internal Error", status_code=500)
+
 
     def redirect(self, location):
-        return self.respond("", status_code=302, headers={"Location":location})
+        try:
+            return self.respond("", status_code=302, headers={"Location":location})
+        except:
+            return self.respond("500 Internal Error", status_code=500)
 
     def router(self, routes):
         route = self.route()
@@ -136,6 +143,9 @@ class Response:
         isOkay = False
         if route in routes:
             isOkay = True
+        elif route.startswith("/static"):
+            self.respond_template("static/{}".format(route.replace("/static/", '')))
+            return
         else:
             for r in routes: # Parses URL for variables
                 if "<" in r:
@@ -178,7 +188,10 @@ class Response:
         return self.request_data()['route']
     
     def respond_template(self, file, status_code=200, headers=None):
-        self.respond(open(file).read(), status_code=status_code, headers=headers)
+        try:
+            self.respond(open(file).read(), status_code=status_code, headers=headers)
+        except:
+            self.respond("500 Internal Error", status_code=500)
 
     def respond(self, data, status_code=200, headers=None):
         if status_code in self.HTTP_ERROR:
