@@ -20,6 +20,21 @@ http.start({
 Other Examples
 =======
 
+Render HTML
+-
+
+```
+from feather import http
+
+def hello_world(req, res):
+    res.respond_template("templates/hello_world.html")
+
+http.start({
+    "/":hello_world
+})
+```
+
+
 URL Variables
 -
 
