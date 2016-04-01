@@ -1,7 +1,7 @@
 About
 =====
 
-Feather is a Python micro web framework that aims to be as small and simple as possible while still providing a production ready web server.
+Feather is a Python micro web framework that aims to be as small and simple as possible while still providing a production ready, multi threaded, web server.
 
 Hello World
 ===========
@@ -14,7 +14,7 @@ def hello_world(req, res):
 
 http.start({
     "/":hello_world
-})
+}, threads = 5)
 ```
 
 Other Examples
